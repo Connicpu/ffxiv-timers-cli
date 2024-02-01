@@ -7,7 +7,7 @@ use std::{
     str::FromStr,
 };
 
-use chrono::{DateTime, Duration, Local, Utc};
+use chrono::{DateTime, Duration, Local, SubsecRound, Utc};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
@@ -51,8 +51,8 @@ fn main() -> anyhow::Result<()> {
     let tasks_folder = PathBuf::from_iter([user_dirs.home_dir(), Path::new(TASKS_FOLDER)]);
 
     let mut stdout = StandardStream::stdout(termcolor::ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 255, 255))))?;
-    writeln!(&mut stdout, "Map Allowances:")?;
+
+    let mut entries = Vec::new();
     for entry in tasks_folder.read_dir()? {
         let Ok(entry) = entry else { continue };
         let Ok(kind) = entry.file_type() else {
@@ -80,36 +80,53 @@ fn main() -> anyhow::Result<()> {
             }
         };
 
+        entries.push(data);
+    }
+
+    if entries.is_empty() {
+        return Ok(());
+    }
+
+    entries.retain(|entry| {
         let now = Utc::now();
         let one_week_ago = now - Duration::weeks(1);
-        if data.task_info.map < one_week_ago {
-            continue;
-        }
+        entry.task_info.map > one_week_ago
+    });
 
-        let (time_display, status_icon) = if data.task_info.map < now {
+    let max_name_len = entries
+        .iter()
+        .map(|entry| entry.char_info.name.len() + server_name(entry.char_info.server_id).len() + 3)
+        .max()
+        .unwrap();
+
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(255, 255, 255))))?;
+    writeln!(&mut stdout, "Map Allowances")?;
+    for data in entries {
+        let now = Utc::now();
+
+        let time = data.task_info.map.with_timezone(&Local).round_subsecs(0);
+        let time_display = if data.task_info.map < now {
             stdout.set_color(&ready_color())?;
-            let time = data.task_info.map.with_timezone(&Local);
-            (format!("{time}"), "✅")
+            format!("{time}")
         } else {
             stdout.set_color(&waiting_color())?;
             let dur = data.task_info.map - now;
-            (
-                format!(
-                    "{:02}:{:02}:{:02}",
-                    dur.num_hours(),
-                    dur.num_minutes() % 60,
-                    dur.num_seconds() % 60
-                ),
-                "🕒",
+            format!(
+                "{:02}:{:02}:{:02}",
+                dur.num_hours(),
+                dur.num_minutes() % 60,
+                dur.num_seconds() % 60
             )
         };
 
         let char_name = &*data.char_info.name;
         let char_server = server_name(data.char_info.server_id);
 
+        let name_display = format!("{char_name} ({char_server})");
+        let time_fmt = time.format("%Y-%m-%d %H:%M:%S");
         writeln!(
             &mut stdout,
-            "   {char_name} ({char_server}): {time_display} {status_icon}"
+            "    {name_display:<max_name_len$} - {time_display} ({time_fmt})"
         )?;
     }
 
@@ -125,7 +142,7 @@ fn ready_color() -> ColorSpec {
 }
 
 fn waiting_color() -> ColorSpec {
-    ColorSpec::new().set_fg(Some(Color::Yellow)).clone()
+    ColorSpec::new().set_fg(Some(Color::Cyan)).clone()
 }
 
 fn datetime_or_default<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>

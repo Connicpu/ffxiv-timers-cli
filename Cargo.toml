@@ -1,2 +1,3 @@
 [workspace]
-members = ["sub-returns", "crop-timers", "sub-returns"]
+resolver = "2"
+members = ["sub-returns", "crop-timers", "map-allowances"]

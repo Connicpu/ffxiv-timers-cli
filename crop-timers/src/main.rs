@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
 };
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Local, SubsecRound, Utc};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
@@ -168,9 +168,19 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
+    if entries_by_crop.is_empty() {
+        return Ok(());
+    }
+
+    let max_name_len = entries_by_crop
+        .keys()
+        .map(|&crop_id| crop_name(crop_id).len() + 5)
+        .max()
+        .unwrap();
+
     let mut stdout = StandardStream::stdout(termcolor::ColorChoice::Always);
     stdout.set_color(&ColorSpec::new().set_fg(Some(Color::Rgb(255, 255, 255))))?;
-    writeln!(&mut stdout, "Crops:")?;
+    writeln!(&mut stdout, "Crop Timers")?;
     for (crop_id, patches) in entries_by_crop {
         let overall_status = patches
             .iter()
@@ -197,10 +207,11 @@ fn main() -> anyhow::Result<()> {
 
         let now = Utc::now();
         let time_display = stage_time
-            .map(|time| time - now)
-            .map(|dur| {
+            .map(|time| (time - now, time.with_timezone(&Local)))
+            .map(|(dur, time)| (dur, time.round_subsecs(0).format("%Y-%m-%d %H:%M:%S")))
+            .map(|(dur, time)| {
                 format!(
-                    "{:02}:{:02}:{:02}",
+                    "{:02}:{:02}:{:02} ({time})",
                     dur.num_hours(),
                     dur.num_minutes() % 60,
                     dur.num_seconds() % 60
@@ -211,9 +222,8 @@ fn main() -> anyhow::Result<()> {
         stdout.set_color(&overall_status.color())?;
         writeln!(
             &mut stdout,
-            "   {} ({}) {}",
-            crop_name(crop_id),
-            patches.len(),
+            "    {:<max_name_len$} - {}",
+            format!("{} ({})", crop_name(crop_id), patches.len()),
             time_display
         )?;
     }
