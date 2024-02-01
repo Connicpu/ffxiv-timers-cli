@@ -222,9 +222,8 @@ fn main() -> anyhow::Result<()> {
         stdout.set_color(&overall_status.color())?;
         writeln!(
             &mut stdout,
-            "    {:<max_name_len$} - {}",
-            format!("{} ({})", crop_name(crop_id), patches.len()),
-            time_display
+            "    {crop_display:<max_name_len$} - {time_display}",
+            crop_display = format_args!("{} ({})", crop_name(crop_id), patches.len())
         )?;
     }
 

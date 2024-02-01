@@ -122,11 +122,11 @@ fn main() -> anyhow::Result<()> {
         let char_name = &*data.char_info.name;
         let char_server = server_name(data.char_info.server_id);
 
-        let name_display = format!("{char_name} ({char_server})");
         let time_fmt = time.format("%Y-%m-%d %H:%M:%S");
         writeln!(
             &mut stdout,
-            "    {name_display:<max_name_len$} - {time_display} ({time_fmt})"
+            "    {name_display:<max_name_len$} - {time_display} ({time_fmt})",
+            name_display = format_args!("{char_name} ({char_server})")
         )?;
     }
 
