@@ -126,7 +126,7 @@ fn main() -> anyhow::Result<()> {
         writeln!(
             &mut stdout,
             "    {name_display:<max_name_len$} - {time_display} ({time_fmt})",
-            name_display = format_args!("{char_name} ({char_server})")
+            name_display = format!("{char_name} ({char_server})")
         )?;
     }
 

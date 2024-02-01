@@ -223,7 +223,7 @@ fn main() -> anyhow::Result<()> {
         writeln!(
             &mut stdout,
             "    {crop_display:<max_name_len$} - {time_display}",
-            crop_display = format_args!("{} ({})", crop_name(crop_id), patches.len())
+            crop_display = format!("{} ({})", crop_name(crop_id), patches.len())
         )?;
     }
 
