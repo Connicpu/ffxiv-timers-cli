@@ -107,7 +107,7 @@ fn main() -> anyhow::Result<()> {
         let time = data.task_info.map.with_timezone(&Local).round_subsecs(0);
         let time_display = if data.task_info.map < now {
             stdout.set_color(&ready_color())?;
-            format!("{time}")
+            format!("00:00:00")
         } else {
             stdout.set_color(&waiting_color())?;
             let dur = data.task_info.map - now;
