@@ -211,7 +211,7 @@ fn main() -> anyhow::Result<()> {
             .map(|(dur, time)| (dur, time.round_subsecs(0).format("%Y-%m-%d %H:%M:%S")))
             .map(|(dur, time)| {
                 format!(
-                    "{:02}:{:02}:{:02} ({time})",
+                    "- {:02}:{:02}:{:02} ({time})",
                     dur.num_hours(),
                     dur.num_minutes() % 60,
                     dur.num_seconds() % 60
@@ -222,7 +222,7 @@ fn main() -> anyhow::Result<()> {
         stdout.set_color(&overall_status.color())?;
         writeln!(
             &mut stdout,
-            "    {crop_display:<max_name_len$} - {time_display}",
+            "    {crop_display:<max_name_len$} {time_display}",
             crop_display = format!("{} ({})", crop_name(crop_id), patches.len())
         )?;
     }
